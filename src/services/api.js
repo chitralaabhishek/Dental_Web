@@ -1,18 +1,6 @@
 import axios from 'axios';
 
-const getBaseUrl = () => {
-  const hostname = window.location.hostname;
-  const isLocal = 
-    hostname === 'localhost' || 
-    hostname === '127.0.0.1' || 
-    hostname.startsWith('192.168.') || 
-    hostname.startsWith('10.') || 
-    hostname.startsWith('172.');
-  
-  return isLocal ? `http://${hostname}:8000` : 'https://dental-scan-api.onrender.com';
-};
-
-const BASE_URL = getBaseUrl();
+const BASE_URL = 'https://dental-scan-api.onrender.com';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -22,9 +10,11 @@ const api = axios.create({
 // Add token to every request automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
@@ -46,9 +36,10 @@ export const patientAPI = {
 export const scanAPI = {
   getAll: () => api.get('/scans'),
   save: (data) => api.post('/scans', data),
-  predict: (formData) => api.post('/predict', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  predict: (formData) =>
+    api.post('/predict', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
 };
 
 // Dashboard

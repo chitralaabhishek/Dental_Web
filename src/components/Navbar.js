@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ const Navbar = () => {
         </div>
 
         {/* Desktop menu */}
-        <div style={styles.desktopMenu}>
+        <div className="desktop-menu" style={styles.desktopMenu}>
           {navItems.map(item => (
             <button
               key={item.path}
@@ -51,6 +52,7 @@ const Navbar = () => {
 
         {/* Mobile hamburger */}
         <button
+          className="hamburger"
           style={styles.hamburger}
           onClick={() => setMenuOpen(!menuOpen)}
         >
@@ -124,7 +126,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    '@media (max-width: 768px)': { display: 'none' },
   },
   navItem: {
     background: 'transparent',
@@ -169,7 +170,6 @@ const styles = {
     fontSize: 24,
     border: 'none',
     cursor: 'pointer',
-    '@media (max-width: 768px)': { display: 'block' },
   },
   mobileMenu: {
     background: '#0D47A1',

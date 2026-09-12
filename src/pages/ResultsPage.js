@@ -127,57 +127,211 @@ const ResultsPage = () => {
 
   const downloadPDF = () => {
     const doc = new jsPDF();
-    doc.setFillColor(21, 101, 192);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.text('DentalScan AI', 20, 18);
-    doc.setFontSize(11);
-    doc.text('AI-Powered Oral Cancer Detection Report', 20, 28);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 18);
+    const pageWidth = 210;
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
 
-    const riskColor = result.riskLevel === 'high' ? [198, 40, 40] : result.riskLevel === 'moderate' ? [245, 124, 0] : [46, 125, 50];
-    doc.setFillColor(...riskColor);
-    doc.rect(0, 42, 210, 20, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.text(`${result.riskLevel.toUpperCase()} RISK`, 20, 55);
-    doc.text(`Cancer Probability: ${result.cancerProbability}%`, 130, 55);
-
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(14);
-    doc.text('Patient Information', 20, 80);
-    doc.setFontSize(11);
-    doc.text(`Name: ${patient.name}`, 20, 92);
-    doc.text(`Age: ${patient.age} years`, 20, 102);
-    doc.text(`Mobile: ${patient.mobile}`, 20, 112);
-    doc.text(`Scan Date: ${new Date().toLocaleString()}`, 20, 122);
-
-    doc.setFontSize(14);
-    doc.text('AI Analysis Results', 20, 142);
-    doc.setFontSize(11);
-    doc.text(`Detected Lesion: ${result.lesionType}`, 20, 154);
-    doc.text(`Disease Match: ${result.diseaseName}`, 20, 164);
-    doc.text(`Match Probability: ${result.diseaseMatchProbability}%`, 20, 174);
-
-    doc.setFontSize(14);
-    doc.text('Per-Image Analysis', 20, 194);
-    result.imageAnalysis.forEach((a, i) => {
+    const drawSectionHeader = (title, y) => {
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
-      doc.text(`${a.type}: ${a.finding} (${a.confidence}%)`, 20, 206 + i * 10);
+      doc.setTextColor(26, 35, 126); // #1A237E
+      doc.text(title, margin, y);
+    };
+
+    // ==========================================
+    // PAGE 1: HEADER, RISK, PATIENT INFO, AI RESULTS, TABLE
+    // ==========================================
+
+    // 1. Header Card (Blue Banner)
+    doc.setFillColor(21, 101, 192); // #1565C0
+    doc.roundedRect(margin, 15, contentWidth, 24, 3, 3, 'F');
+
+    // Title & Subtitle
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('DentalScan AI', margin + 8, 24);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text('AI-Powered Oral Cancer Detection Report', margin + 8, 31);
+
+    // Date on the right
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text('Report Date', margin + contentWidth - 32, 22);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    const reportDate = new Date(result.scanDate || Date.now()).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+    doc.text(reportDate, margin + contentWidth - 32, 27);
+
+    // 2. Risk Banner
+    const isHigh = result.riskLevel === 'high';
+    const isMod = result.riskLevel === 'moderate';
+    const riskColor = isHigh ? [198, 40, 40] : isMod ? [245, 124, 0] : [46, 125, 50]; // #C62828, #F57C00, #2E7D32
+    doc.setFillColor(...riskColor);
+    doc.roundedRect(margin, 43, contentWidth, 12, 3, 3, 'F');
+
+    // Risk text inside banner
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`${result.riskLevel.toUpperCase()} RISK`, margin + 8, 51);
+    doc.text(`Cancer Probability: ${result.cancerProbability}%`, margin + contentWidth - 62, 51);
+
+    // 3. Patient Information
+    drawSectionHeader('Patient Information', 64);
+    
+    // Draw background card for Patient Info
+    doc.setDrawColor(240, 240, 240); // Very light grey border
+    doc.setFillColor(252, 252, 252); // Very light grey fill
+    doc.roundedRect(margin, 68, contentWidth, 46, 2, 2, 'FD');
+
+    // Patient info fields
+    const pInfo = [
+      { label: 'Patient Name', value: patient.name },
+      { label: 'Age', value: `${patient.age} years` },
+      { label: 'Mobile', value: patient.mobile },
+      { label: 'Appointment Date', value: new Date(patient.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) },
+      { label: 'Scan Date', value: new Date(result.scanDate || Date.now()).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+      { label: 'Patient ID', value: patient.id }
+    ];
+
+    pInfo.forEach((item, index) => {
+      const yPos = 74 + (index * 6.2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(96, 125, 139); // #607D8B
+      doc.text(item.label, margin + 8, yPos);
+      
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(33, 33, 33); // #212121
+      doc.text(String(item.value), margin + contentWidth - 8, yPos, { align: 'right' });
     });
 
-    doc.setFontSize(14);
-    doc.text('Clinical Recommendation', 20, 252);
-    doc.setFontSize(11);
-    const lines = doc.splitTextToSize(result.recommendation, 170);
-    doc.text(lines, 20, 264);
+    // 4. AI Analysis Results
+    drawSectionHeader('AI Analysis Results', 123);
+    
+    doc.setDrawColor(240, 240, 240);
+    doc.setFillColor(252, 252, 252);
+    doc.roundedRect(margin, 127, contentWidth, 24, 2, 2, 'FD');
 
-    doc.setFillColor(255, 243, 205);
-    doc.rect(15, 275, 180, 18, 'F');
+    const aiRes = [
+      { label: 'Cancer Probability', value: `${result.cancerProbability}%` },
+      { label: 'Risk Level', value: `${result.riskLevel.toUpperCase()} RISK` },
+      { label: 'Detected Lesion', value: result.lesionType }
+    ];
+
+    aiRes.forEach((item, index) => {
+      const yPos = 133 + (index * 6.2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(96, 125, 139);
+      doc.text(item.label, margin + 8, yPos);
+      
+      doc.setFont('helvetica', 'bold');
+      if (item.label === 'Risk Level') {
+        doc.setTextColor(...riskColor);
+      } else {
+        doc.setTextColor(33, 33, 33);
+      }
+      doc.text(String(item.value), margin + contentWidth - 8, yPos, { align: 'right' });
+    });
+
+    // 5. Per-Image Analysis Table
+    drawSectionHeader('Per-Image Analysis', 160);
+
+    const tableY = 164;
+    const rowHeight = 7;
+
+    // Header row
+    doc.setFillColor(21, 101, 192); // #1565C0
+    doc.rect(margin, tableY, contentWidth, rowHeight, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.text('Image Type', margin + 6, tableY + 4.5);
+    doc.text('Finding', margin + 70, tableY + 4.5);
+    doc.text('Confidence', margin + contentWidth - 6, tableY + 4.5, { align: 'right' });
+
+    // Table rows
+    result.imageAnalysis.forEach((item, index) => {
+      const rowY = tableY + rowHeight + (index * rowHeight);
+      
+      // Zebra striping
+      if (index % 2 === 0) {
+        doc.setFillColor(255, 255, 255);
+      } else {
+        doc.setFillColor(248, 250, 252);
+      }
+      doc.rect(margin, rowY, contentWidth, rowHeight, 'F');
+
+      // Thin grey borders
+      doc.setDrawColor(240, 240, 240);
+      doc.line(margin, rowY + rowHeight, margin + contentWidth, rowY + rowHeight);
+
+      // Text values
+      doc.setTextColor(33, 33, 33);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(item.type, margin + 6, rowY + 4.5);
+
+      const isNormal = item.finding === 'Normal' || item.finding === 'No abnormality';
+      doc.setFont('helvetica', isNormal ? 'normal' : 'bold');
+      doc.setTextColor(...(isNormal ? [76, 175, 80] : riskColor)); // Green if normal, Else Risk Color
+      doc.text(item.finding, margin + 70, rowY + 4.5);
+
+      doc.setTextColor(55, 71, 79);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${item.confidence}%`, margin + contentWidth - 6, rowY + 4.5, { align: 'right' });
+    });
+
+    // Draw table side vertical borders
+    doc.setDrawColor(240, 240, 240);
+    doc.line(margin, tableY, margin, tableY + rowHeight + (result.imageAnalysis.length * rowHeight));
+    doc.line(margin + contentWidth, tableY, margin + contentWidth, tableY + rowHeight + (result.imageAnalysis.length * rowHeight));
+
+    // 6. Clinical Recommendation Section Heading
+    drawSectionHeader('Clinical Recommendation', 208);
+
+    // ==========================================
+    // PAGE 2: CLINICAL RECOMMENDATION CARD & DISCLAIMER CARD
+    // ==========================================
+    doc.addPage();
+
+    // 1. Recommendation Card
+    doc.setFillColor(227, 242, 253); // #E3F2FD
+    doc.setDrawColor(144, 202, 249); // #90CAF9
+    doc.roundedRect(margin, 15, contentWidth, 18, 2, 2, 'FD');
+
+    // Text inside recommendation card
+    doc.setTextColor(21, 101, 192); // #1565C0
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(100, 100, 0);
-    doc.text('DISCLAIMER: This report is for screening purposes only. Consult a qualified dental surgeon for proper diagnosis.', 20, 284, { maxWidth: 170 });
+    const recLines = doc.splitTextToSize(result.recommendation, contentWidth - 16);
+    doc.text(recLines, margin + 8, 23);
+
+    // 2. Disclaimer Card
+    doc.setFillColor(255, 253, 231); // #FFFDE7
+    doc.setDrawColor(255, 245, 157); // #FFF59D
+    doc.roundedRect(margin, 40, contentWidth, 24, 2, 2, 'FD');
+
+    // Heading "DISCLAIMER"
+    doc.setTextColor(230, 81, 0); // Orange-red header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('DISCLAIMER', margin + 8, 46);
+
+    // Text inside disclaimer card
+    doc.setTextColor(84, 110, 122); // #546E7A
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    const discText = 'This report is generated by AI and is for screening purposes only. It should not replace professional medical diagnosis. Please consult a qualified dental surgeon or oncologist for proper evaluation.';
+    const discLines = doc.splitTextToSize(discText, contentWidth - 16);
+    doc.text(discLines, margin + 8, 52);
 
     doc.save(`DentalScan_${patient.name}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
   };
